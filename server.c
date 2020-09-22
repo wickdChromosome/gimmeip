@@ -15,7 +15,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define PORT 9999
+#define PORT 80
 
 
 void _abort(char* errormsg) {
@@ -49,14 +49,15 @@ int main() {
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(PORT);
-	servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	//servaddr.sin_addr.s_addr = inet_addr("127.0.0.1");
+	servaddr.sin_addr.s_addr = inet_addr("67.205.162.66");
 
 	bound = bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 
 
 	//try to bind socket
 	if(listen(sockfd, 10) == 0){
-		printf("Bound socket!\n");
+		printf("Bound socket %i!\n", PORT);
 	}else{
 		_abort("[-]Error in binding.\n");
 	}
