@@ -15,6 +15,8 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#include "html_content.h"
+
 #define PORT 80
 
 
@@ -30,16 +32,7 @@ int main() {
 	//buffer to store incoming request to
 	char buf[2000];
 	//html response if user agent not curl
-	char* html_to_serve_template = 
-	"<html>"
-	"<head></head>"
-	"<body>"
-	"<h1>Hey! Your IP address is ^ip^           .</h1>"
-	"<p>This tool is mainly meant to be used from the command line.</p>"
-	"<p>To try it out, you can do <b>my_ip=$(curl gimmeip.org) && echo $my_ip</b>.</p>"
-	"</body>"
-	"</html>";
-
+	char* html_to_serve_template = get_html_template(); 
 	//starting socker, socket to redirect to
 	struct sockaddr_in servaddr, rediraddr;
 	//new socket size
