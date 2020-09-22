@@ -36,9 +36,6 @@ int main() {
 	socklen_t newsocket_size;
 	int sockfd, bound, redirsock;
 
-	//process id for fork
-	pid_t forkid;
-
 	//allocate socket
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	//check if successful
@@ -59,7 +56,7 @@ int main() {
 
 	//try to bind socket
 	if(listen(sockfd, 10) == 0){
-		printf("Bound socket!");
+		printf("Bound socket!\n");
 	}else{
 		_abort("[-]Error in binding.\n");
 	}
@@ -73,26 +70,36 @@ int main() {
 			exit(1);
 		}
 		printf("Connection accepted from %s:%d\n", inet_ntoa(rediraddr.sin_addr), ntohs(rediraddr.sin_port));
-
 		
-		if((forkid = fork()) == 0){
+		if(!fork()){
+
 			//terminate previous input socket
 			close(sockfd);
 
-			while(1){
+			//copy incoming message to buffer
+			read(redirsock, buf, 10000);
 
-				//copy incoming message to buffer
-				recv(redirsock, buf, 10000, 0);
+			//just print buffer for now
+			puts(buf);
 
-				//just print buffer for now
-				puts(buf);
+			//create a new buffer to send the ip address in
+			char* ipaddr;
+			ipaddr = inet_ntoa(rediraddr.sin_addr);
+			
+			//convert ip address to string and send it
+			send(redirsock, ipaddr, strlen(ipaddr), 0);
+			bzero(ipaddr, sizeof(ipaddr));
+			puts(ipaddr);
 
-			}
+			close(redirsock);
+		
 		}
 
+		close(redirsock);
+	
 	}
 
-	close(redirsock);
+
 
 
 	return 0;
