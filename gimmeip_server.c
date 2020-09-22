@@ -32,7 +32,7 @@ int main() {
 	//buffer to store incoming request to
 	char buf[2000];
 	//html response if user agent not curl
-	char* html_to_serve_template = get_html_template(); 
+	const char* html_to_serve_template = get_html_template(); 
 	//starting socker, socket to redirect to
 	struct sockaddr_in servaddr, rediraddr;
 	//new socket size
