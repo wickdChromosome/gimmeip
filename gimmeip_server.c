@@ -18,7 +18,7 @@
 #include "html_content.h"
 
 #define PORT 80
-
+#define HOST_ADDR "67.205.162.66"
 
 void _abort(char* errormsg) {
 
@@ -32,7 +32,7 @@ int main() {
 	//buffer to store incoming request to
 	char buf[2000];
 	//html response if user agent not curl
-	const char* html_to_serve_template = get_html_template(); 
+	char* html_to_serve_template = get_html_template(); 
 	//starting socker, socket to redirect to
 	struct sockaddr_in servaddr, rediraddr;
 	//new socket size
@@ -52,7 +52,7 @@ int main() {
 
 	servaddr.sin_family = AF_INET;
 	servaddr.sin_port = htons(PORT);
-	servaddr.sin_addr.s_addr = inet_addr("67.205.162.66");
+	servaddr.sin_addr.s_addr = inet_addr(HOST_ADDR);
 
 	bound = bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 
@@ -90,7 +90,6 @@ int main() {
 			//get the user agent, check if its curl
 			char* user_agent_start;
 			user_agent_start = strstr(buf,"User-Agent:");
-			puts(user_agent_start);
 			if(user_agent_start != NULL){
 
 				if( strncmp(user_agent_start, "User-Agent: curl", 16) == 0 ) {
@@ -104,9 +103,9 @@ int main() {
 					//the site is accessed by browser
 					
 					//lets make a copy to modify in the original html string
-					int html_len = strlen(html_to_serve_template) + 1;
+					int html_len = strlen(html_to_serve_template);
 					char html_to_serve[html_len];
-					strncpy(html_to_serve, html_to_serve_template, html_len);
+					memcpy(html_to_serve, html_to_serve_template, html_len + 1);
 
 					//lets replace the dummy ip address in the html string
 					char* dummy_ip_ptr = strstr(html_to_serve, "^ip^           ");
@@ -114,12 +113,12 @@ int main() {
 					//check to make sure ip address is within length limits
 					int ip_len = strlen(ipaddr);
 					if (ip_len > 20) _abort("Malformatted IP address!\n"); 
-					strncpy(dummy_ip_ptr,ipaddr,ip_len);
+					memcpy(dummy_ip_ptr,ipaddr,ip_len);
 
 					//now send the html page with the user's IP in there
-					send(redirsock, html_to_serve, html_len, 0);
+					send(redirsock, html_to_serve, strlen(html_to_serve) + 1, 0);
 					bzero(ipaddr, sizeof(ipaddr));
-				
+
 				}
 
 

@@ -7,11 +7,7 @@
 <title>gimmeip.org</title>
 
 <!-- Ajax -->
-<script
-src='https://code.jquery.com/jquery-3.4.1.min.js'
-integrity='sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo='
-crossorigin='anonymous'>
-</script>
+<script src='https://code.jquery.com/jquery-3.4.1.min.js' integrity='sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=' crossorigin='anonymous'> </script>
 
 <!-- Fonts -->
 <link href='http://fonts.googleapis.com/icon?family=Material+Icons' rel='stylesheet'>
@@ -58,7 +54,6 @@ crossorigin='anonymous'>
 
 <script type='text/javascript'>
 	
-	// Welcome text
 	var typed = new Typed('#welcome_text',{
 		strings: ['<h4>Here is you public IP address: ^ip^           </h4>'],
 		stringsElement: '#typed-strings',
@@ -66,7 +61,6 @@ crossorigin='anonymous'>
 		typeSpeed: 10,
 		onComplete: (self) => {
 
-			//Lets show the animated posts button
 			$('#post_typing_div').show();
 
 		},
