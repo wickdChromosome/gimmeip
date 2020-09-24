@@ -17,8 +17,9 @@
 
 #include "html_content.h"
 
-#define PORT 8081
-#define HOST_ADDR "127.0.0.1"
+// these macros get set by sed before compilation. DO NOT EDIT
+#define PORT 8888  
+#define HOST_ADDR "127.0.0.1" 
 
 void _abort(char* errormsg) {
 
@@ -29,13 +30,29 @@ void _abort(char* errormsg) {
 
 int main() {
 
+
 	//buffer to store incoming request to
-	char buf[2000];
+	char buf[1000];
 	//html response if user agent not curl
 	char* html_to_serve_template = get_html_template(); 
+	int html_len = strlen(html_to_serve_template);
+
 	//OK response header
-	printf("%i\n",strlen(html_to_serve_template));
-	char* resp_200 = "HTTP/1.1 200 OK\nConnection: close\nContent-Length: 2205\nContent-Type: text/html\n\n";
+	char resp_200[200];
+	char* resp_200_first = "HTTP/1.1 200 OK\nConnection: close\nContent-Length: ";
+	char* resp_200_last = "\nContent-Type: text/html\n\n";
+
+	//stores the int representing the size of the input html file
+	char html_contlength[50];
+	sprintf(html_contlength, "%i", html_len);
+	strcat(resp_200, resp_200_first);
+	strcat(resp_200, html_contlength);
+	strcat(resp_200, resp_200_last);
+	int header_len = strlen(resp_200);
+
+	//the full message length
+	int full_msg_len = html_len + header_len;
+
 	//starting socker, socket to redirect to
 	struct sockaddr_in servaddr, rediraddr;
 	//new socket size
@@ -84,7 +101,7 @@ int main() {
 			close(sockfd);
 
 			//copy incoming message to buffer
-			read(redirsock, buf, 2000);
+			read(redirsock, buf, 1000);
 
 			//create a new buffer to send the ip address in
 			char* ipaddr;
@@ -106,9 +123,7 @@ int main() {
 					//the site is accessed by browser
 					
 					//lets make a copy to modify in the original html string
-					int html_len = strlen(html_to_serve_template);
-					int header_len = strlen(resp_200);
-					char html_to_serve[html_len + header_len];
+					char html_to_serve[full_msg_len];
 					memcpy(html_to_serve, resp_200, header_len);
 					memcpy(html_to_serve+header_len, html_to_serve_template, html_len + 1);
 
@@ -121,7 +136,7 @@ int main() {
 					memcpy(dummy_ip_ptr,ipaddr,ip_len);
 
 					//now send the html page with the user's IP in there
-					send(redirsock, html_to_serve, strlen(html_to_serve), 0);
+					send(redirsock, html_to_serve, full_msg_len, 0);
 					
 					bzero(ipaddr, sizeof(ipaddr));
 
