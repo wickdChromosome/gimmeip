@@ -117,7 +117,8 @@ int main() {
 					//convert ip address to string and send it
 					send(redirsock, ipaddr, strlen(ipaddr), 0);
 					bzero(ipaddr, sizeof(ipaddr));
-				
+					exit(0);
+
 				} else {
 					
 					//the site is accessed by browser
@@ -137,8 +138,8 @@ int main() {
 
 					//now send the html page with the user's IP in there
 					send(redirsock, html_to_serve, full_msg_len, 0);
-					
 					bzero(ipaddr, sizeof(ipaddr));
+					exit(0);
 
 				}
 
