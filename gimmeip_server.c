@@ -17,8 +17,8 @@
 
 #include "html_content.h"
 
-#define PORT 80
-#define HOST_ADDR "67.205.162.66"
+#define PORT 9999
+#define HOST_ADDR "0.0.0.0"
 
 void _abort(char* errormsg) {
 
@@ -33,6 +33,9 @@ int main() {
 	char buf[2000];
 	//html response if user agent not curl
 	char* html_to_serve_template = get_html_template(); 
+	//html response header for 200
+	char* html_200 = "HTTP/1.1 200 OK\nConnection: close\nContent-Length: 2277\nContent-Type: text/html";
+
 	//starting socker, socket to redirect to
 	struct sockaddr_in servaddr, rediraddr;
 	//new socket size
@@ -70,7 +73,9 @@ int main() {
 		//accept new connection
 		redirsock = accept(sockfd, (struct sockaddr*)&rediraddr, &newsocket_size);
 		if(redirsock < 0){
-			exit(1);
+	
+			_abort("Unable to accept connection");
+
 		}
 		//this gets redirected to a log file
 		printf("Connection accepted from %s:%d\n", inet_ntoa(rediraddr.sin_addr), ntohs(rediraddr.sin_port));
@@ -104,8 +109,13 @@ int main() {
 					
 					//lets make a copy to modify in the original html string
 					int html_len = strlen(html_to_serve_template);
-					char html_to_serve[html_len];
-					memcpy(html_to_serve, html_to_serve_template, html_len + 1);
+					int head_len = strlen(html_200);
+					char html_to_serve[html_len + head_len];
+					//copy the html header first (no null terminator yet)
+					memcpy(html_to_serve, html_200, head_len);
+
+					//now copy the actual response body right after header
+					memcpy(html_to_serve + head_len, html_to_serve_template, html_len + 1);
 
 					//lets replace the dummy ip address in the html string
 					char* dummy_ip_ptr = strstr(html_to_serve, "^ip^           ");
