@@ -17,8 +17,8 @@
 
 #include "html_content.h"
 
-#define PORT 9999
-#define HOST_ADDR "0.0.0.0"
+#define PORT 8081
+#define HOST_ADDR "127.0.0.1"
 
 void _abort(char* errormsg) {
 
@@ -33,9 +33,9 @@ int main() {
 	char buf[2000];
 	//html response if user agent not curl
 	char* html_to_serve_template = get_html_template(); 
-	//html response header for 200
-	char* html_200 = "HTTP/1.1 200 OK\nConnection: close\nContent-Length: 2277\nContent-Type: text/html";
-
+	//OK response header
+	printf("%i\n",strlen(html_to_serve_template));
+	char* resp_200 = "HTTP/1.1 200 OK\nConnection: close\nContent-Length: 2205\nContent-Type: text/html\n\n";
 	//starting socker, socket to redirect to
 	struct sockaddr_in servaddr, rediraddr;
 	//new socket size
@@ -73,9 +73,7 @@ int main() {
 		//accept new connection
 		redirsock = accept(sockfd, (struct sockaddr*)&rediraddr, &newsocket_size);
 		if(redirsock < 0){
-	
-			_abort("Unable to accept connection");
-
+			exit(1);
 		}
 		//this gets redirected to a log file
 		printf("Connection accepted from %s:%d\n", inet_ntoa(rediraddr.sin_addr), ntohs(rediraddr.sin_port));
@@ -109,13 +107,10 @@ int main() {
 					
 					//lets make a copy to modify in the original html string
 					int html_len = strlen(html_to_serve_template);
-					int head_len = strlen(html_200);
-					char html_to_serve[html_len + head_len];
-					//copy the html header first (no null terminator yet)
-					memcpy(html_to_serve, html_200, head_len);
-
-					//now copy the actual response body right after header
-					memcpy(html_to_serve + head_len, html_to_serve_template, html_len + 1);
+					int header_len = strlen(resp_200);
+					char html_to_serve[html_len + header_len];
+					memcpy(html_to_serve, resp_200, header_len);
+					memcpy(html_to_serve+header_len, html_to_serve_template, html_len + 1);
 
 					//lets replace the dummy ip address in the html string
 					char* dummy_ip_ptr = strstr(html_to_serve, "^ip^           ");
@@ -126,7 +121,8 @@ int main() {
 					memcpy(dummy_ip_ptr,ipaddr,ip_len);
 
 					//now send the html page with the user's IP in there
-					send(redirsock, html_to_serve, strlen(html_to_serve) + 1, 0);
+					send(redirsock, html_to_serve, strlen(html_to_serve), 0);
+					
 					bzero(ipaddr, sizeof(ipaddr));
 
 				}
