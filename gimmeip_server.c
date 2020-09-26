@@ -17,7 +17,6 @@
 
 #include "html_content.h"
 
-// these macros get set by sed before compilation. DO NOT EDIT
 #define PORT 8888  
 #define HOST_ADDR "127.0.0.1" 
 
@@ -28,8 +27,41 @@ void _abort(char* errormsg) {
 
 }
 
-int main() {
+void handle_curl(int redirsock, char* ipaddr) {
 
+	//convert ip address to string and send it
+	send(redirsock, ipaddr, strlen(ipaddr), 0);
+	bzero(ipaddr, sizeof(ipaddr));
+	exit(0);
+
+}
+
+
+void handle_html(char* html_to_serve_template, int html_len, int header_len, 
+		char* resp_200, char* ipaddr, int redirsock, int full_msg_len) {
+	
+	//lets make a copy to modify in the original html string
+	char html_to_serve[full_msg_len];
+	memcpy(html_to_serve, resp_200, header_len);
+	memcpy(html_to_serve+header_len, html_to_serve_template, html_len + 1);
+
+	//lets replace the dummy ip address in the html string
+	char* dummy_ip_ptr = strstr(html_to_serve, "^ip^           ");
+	
+	//check to make sure ip address is within length limits
+	int ip_len = strlen(ipaddr);
+	if (ip_len > 20) _abort("Malformatted IP address!\n"); 
+	memcpy(dummy_ip_ptr,ipaddr,ip_len);
+
+	//now send the html page with the user's IP in there
+	send(redirsock, html_to_serve, full_msg_len, 0);
+	bzero(ipaddr, sizeof(ipaddr));
+	exit(0);
+
+}
+
+
+int main() {
 
 	//buffer to store incoming request to
 	char buf[1000];
@@ -92,9 +124,10 @@ int main() {
 		if(redirsock < 0){
 			exit(1);
 		}
+
 		//this gets redirected to a log file
 		printf("Connection accepted from %s:%d\n", inet_ntoa(rediraddr.sin_addr), ntohs(rediraddr.sin_port));
-		
+	
 		if(!fork()){
 
 			//terminate previous input socket
@@ -114,52 +147,28 @@ int main() {
 
 				if( strncmp(user_agent_start, "User-Agent: curl", 16) == 0 ) {
 				
-					//convert ip address to string and send it
-					send(redirsock, ipaddr, strlen(ipaddr), 0);
-					bzero(ipaddr, sizeof(ipaddr));
-					exit(0);
-
+					handle_curl(redirsock, ipaddr);
+				
 				} else {
-					
-					//the site is accessed by browser
-					
-					//lets make a copy to modify in the original html string
-					char html_to_serve[full_msg_len];
-					memcpy(html_to_serve, resp_200, header_len);
-					memcpy(html_to_serve+header_len, html_to_serve_template, html_len + 1);
-
-					//lets replace the dummy ip address in the html string
-					char* dummy_ip_ptr = strstr(html_to_serve, "^ip^           ");
-					
-					//check to make sure ip address is within length limits
-					int ip_len = strlen(ipaddr);
-					if (ip_len > 20) _abort("Malformatted IP address!\n"); 
-					memcpy(dummy_ip_ptr,ipaddr,ip_len);
-
-					//now send the html page with the user's IP in there
-					send(redirsock, html_to_serve, full_msg_len, 0);
-					bzero(ipaddr, sizeof(ipaddr));
-					exit(0);
+			
+					handle_html(html_to_serve_template,
+						       	html_len,
+						       	header_len,
+						       	resp_200,
+						       	ipaddr,
+						       	redirsock,
+						       	full_msg_len);
 
 				}
-
 
 			}
 
 		}
 
 		close(redirsock);
-
-	
 	}
 
-
-
-
 	return 0;
-
-
-
 
 }
 
