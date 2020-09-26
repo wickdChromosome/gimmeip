@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <pthread.h>
 
 #include "html_content.h"
 
@@ -26,6 +27,23 @@ void _abort(char* errormsg) {
 	exit(1);
 
 }
+
+
+struct connection_data{
+
+	int sockfd; 
+	int redirsock; 
+	char* buf;
+       	char* html_to_serve_template; 
+	int html_len; 
+	int header_len; 
+	int full_msg_len; 
+	char* resp_200;
+	struct sockaddr_in rediraddr;
+
+};
+
+
 
 void handle_curl(int redirsock, char* ipaddr) {
 
@@ -60,6 +78,44 @@ void handle_html(char* html_to_serve_template, int html_len, int header_len,
 	free(html_to_serve);
 	exit(0);
 
+}
+
+void* handle_connection(struct connection_data* conndata) {
+
+	//terminate previous input socket
+	close(conndata->sockfd);
+
+	//copy incoming message to buffer
+	read(conndata->redirsock, conndata->buf, 1000);
+
+	//create a new buffer to send the ip address in
+	char* ipaddr;
+	ipaddr = inet_ntoa(conndata->rediraddr.sin_addr);
+
+	//get the user agent, check if its curl
+	char* user_agent_start;
+	user_agent_start = strstr(conndata->buf,"User-Agent:");
+	if(user_agent_start != NULL){
+
+		if( strncmp(user_agent_start, "User-Agent: curl", 16) == 0 ) {
+		
+			handle_curl(conndata->redirsock, ipaddr);
+		
+		} else {
+	
+			handle_html(conndata->html_to_serve_template,
+					conndata->html_len,
+					conndata->header_len,
+					conndata->resp_200,
+					ipaddr,
+					conndata->redirsock,
+					conndata->full_msg_len);
+
+		}
+
+	}
+
+	return NULL;
 }
 
 
@@ -130,44 +186,26 @@ int main() {
 
 		//this gets redirected to a log file
 		printf("Connection accepted from %s:%d\n", inet_ntoa(rediraddr.sin_addr), ntohs(rediraddr.sin_port));
-	
-		if(!fork()){
 
-			//terminate previous input socket
-			close(sockfd);
+		//fire up some new threads
+		pthread_t t;
+		struct connection_data conndata;
+		conndata.sockfd = sockfd;
+		conndata.redirsock = redirsock;
+		conndata.buf = buf;
+		conndata.html_to_serve_template = html_to_serve_template;
+	       	conndata.html_len = html_len;
+		conndata.header_len = header_len;
+		conndata.full_msg_len = full_msg_len;
+		conndata.resp_200 = resp_200;
+		conndata.rediraddr = rediraddr;
 
-			//copy incoming message to buffer
-			read(redirsock, buf, 1000);
+		pthread_create(&t, NULL, handle_connection, &conndata);
 
-			//create a new buffer to send the ip address in
-			char* ipaddr;
-			ipaddr = inet_ntoa(rediraddr.sin_addr);
+		//process the connection
+		//handle_connection(sockfd, redirsock, buf, html_to_serve_template, html_len, header_len, full_msg_len, resp_200);
 
-			//get the user agent, check if its curl
-			char* user_agent_start;
-			user_agent_start = strstr(buf,"User-Agent:");
-			if(user_agent_start != NULL){
-
-				if( strncmp(user_agent_start, "User-Agent: curl", 16) == 0 ) {
-				
-					handle_curl(redirsock, ipaddr);
-				
-				} else {
-			
-					handle_html(html_to_serve_template,
-						       	html_len,
-						       	header_len,
-						       	resp_200,
-						       	ipaddr,
-						       	redirsock,
-						       	full_msg_len);
-
-				}
-
-			}
-
-		}
-
+		//close socket
 		close(redirsock);
 	}
 

@@ -1,3 +1,2 @@
 bash embed_html.sh
-bash preprocess.sh
-gcc -Wall -g gimmeip_server.c -o gimmeip_server
+gcc -Wall -g -lpthread gimmeip_server.c -o gimmeip_server
