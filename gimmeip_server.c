@@ -57,9 +57,9 @@ void handle_curl(int redirsock, char* ipaddr) {
 
 void handle_html(char* html_to_serve_template, int html_len, int header_len, 
 		char* resp_200, char* ipaddr, int redirsock, int full_msg_len) {
-	
+
 	//lets make a copy to modify in the original html string
-	char* html_to_serve = malloc(full_msg_len);
+	char* html_to_serve = (char*)malloc(full_msg_len+1);
 	memcpy(html_to_serve, resp_200, header_len);
 	memcpy(html_to_serve+header_len, html_to_serve_template, html_len + 1);
 
@@ -86,7 +86,6 @@ void* handle_connection(struct connection_data* conndata) {
 
 	//copy incoming message to buffer
 	read(conndata->redirsock, conndata->buf, 1000);
-
 	//create a new buffer to send the ip address in
 	char* ipaddr;
 	ipaddr = inet_ntoa(conndata->rediraddr.sin_addr);
@@ -179,30 +178,33 @@ int main() {
 		//accept new connection
 		redirsock = accept(sockfd, (struct sockaddr*)&rediraddr, &newsocket_size);
 		if(redirsock < 0){
-			printf("Unable to accept connection");
-			exit(0);
+			printf("Unable to accept connection\n");
+			
+		} else {
+
+			//this gets redirected to a log file
+			printf("Connection accepted from %s:%d\n", inet_ntoa(rediraddr.sin_addr), ntohs(rediraddr.sin_port));
+
+			//fire up some new threads
+			pthread_t t;
+			struct connection_data conndata;
+			conndata.sockfd = sockfd;
+			conndata.redirsock = redirsock;
+			conndata.buf = buf;
+			conndata.html_to_serve_template = html_to_serve_template;
+			conndata.html_len = html_len;
+			conndata.header_len = header_len;
+			conndata.full_msg_len = full_msg_len;
+			conndata.resp_200 = resp_200;
+			conndata.rediraddr = rediraddr;
+
+			pthread_create(&t, NULL, handle_connection, &conndata);
+
+			//close socket
+			close(redirsock);
+
+
 		}
-
-		//this gets redirected to a log file
-		printf("Connection accepted from %s:%d\n", inet_ntoa(rediraddr.sin_addr), ntohs(rediraddr.sin_port));
-
-		//fire up some new threads
-		pthread_t t;
-		struct connection_data conndata;
-		conndata.sockfd = sockfd;
-		conndata.redirsock = redirsock;
-		conndata.buf = buf;
-		conndata.html_to_serve_template = html_to_serve_template;
-	       	conndata.html_len = html_len;
-		conndata.header_len = header_len;
-		conndata.full_msg_len = full_msg_len;
-		conndata.resp_200 = resp_200;
-		conndata.rediraddr = rediraddr;
-
-		pthread_create(&t, NULL, handle_connection, &conndata);
-
-		//close socket
-		close(redirsock);
 	}
 
 	return 0;
