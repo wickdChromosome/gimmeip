@@ -60,7 +60,6 @@ void handle_html(char* html_to_serve_template, int html_len, int header_len,
 	
 	//lets make a copy to modify in the original html string
 	char* html_to_serve = malloc(full_msg_len);
-	//char html_to_serve[full_msg_len];
 	memcpy(html_to_serve, resp_200, header_len);
 	memcpy(html_to_serve+header_len, html_to_serve_template, html_len + 1);
 
@@ -201,9 +200,6 @@ int main() {
 		conndata.rediraddr = rediraddr;
 
 		pthread_create(&t, NULL, handle_connection, &conndata);
-
-		//process the connection
-		//handle_connection(sockfd, redirsock, buf, html_to_serve_template, html_len, header_len, full_msg_len, resp_200);
 
 		//close socket
 		close(redirsock);
