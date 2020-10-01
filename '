@@ -31,6 +31,7 @@ void _abort(char* errormsg) {
 
 struct connection_data{
 
+	int sockfd; 
 	int redirsock; 
 	char* buf;
        	char* html_to_serve_template; 
@@ -112,7 +113,6 @@ void* handle_connection(struct connection_data* conndata) {
 
 	}
 
-	close(conndata->redirsock);
 	return NULL;
 }
 
@@ -145,12 +145,12 @@ int main() {
 	struct sockaddr_in servaddr, rediraddr;
 	//new socket size
 	socklen_t newsocket_size;
-	int server_socket, bound, redirsock;
+	int sockfd, bound, redirsock;
 
 	//allocate socket
-	server_socket = socket(AF_INET, SOCK_STREAM, 0);
+	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	//check if successful
-	if (server_socket < 0) {
+	if (sockfd < 0) {
 	
 		_abort("Unable to allocate socket\n");	
 	
@@ -162,11 +162,11 @@ int main() {
 	servaddr.sin_port = htons(PORT);
 	servaddr.sin_addr.s_addr = inet_addr(HOST_ADDR);
 
-	bound = bind(server_socket, (struct sockaddr*)&servaddr, sizeof(servaddr));
+	bound = bind(sockfd, (struct sockaddr*)&servaddr, sizeof(servaddr));
 
 
 	//try to bind socket
-	if(listen(server_socket, 10) == 0){
+	if(listen(sockfd, 10) == 0){
 		printf("Bound socket %i!\n", PORT);
 	}else{
 		_abort("Unable to bind socket.\n");
@@ -176,7 +176,7 @@ int main() {
 	while(1){
 
 		//accept new connection
-		redirsock = accept(server_socket, (struct sockaddr*)&rediraddr, &newsocket_size);
+		redirsock = accept(sockfd, (struct sockaddr*)&rediraddr, &newsocket_size);
 		if(redirsock < 0){
 			printf("Unable to accept connection\n");
 			
@@ -188,6 +188,7 @@ int main() {
 			//fire up some new threads
 			pthread_t t;
 			struct connection_data conndata;
+			conndata.sockfd = sockfd;
 			conndata.redirsock = redirsock;
 			conndata.buf = buf;
 			conndata.html_to_serve_template = html_to_serve_template;
@@ -198,6 +199,9 @@ int main() {
 			conndata.rediraddr = rediraddr;
 
 			pthread_create(&t, NULL, handle_connection, &conndata);
+
+			//close socket
+			//close(redirsock);
 
 
 		}
