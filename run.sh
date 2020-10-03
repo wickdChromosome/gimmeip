@@ -1,2 +1,2 @@
 # redirect stdout to log file
-./gimmeip_server >> run.log
+bin/gimmeip_server >> run.log

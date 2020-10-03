@@ -1,9 +1,12 @@
 CCFLAGS=-pthread
 
-all: gimmeip_server
+all: bin/gimmeip_server
 
 debug: CCFLAGS += -DDEBUG -g
-debug: gimmeip_server
+debug: bin/gimmeip_server
 
-gimmeip_server:  
-	bash ./embed_html.sh && $(CC) $(CCFLAGS) gimmeip_server.c -o gimmeip_server
+bin/gimmeip_server:  
+	mkdir -p bin
+	cd src && bash embed_html.sh && \
+	$(CC) $(CCFLAGS) gimmeip_server.c -o ../bin/gimmeip_server
+
