@@ -50,7 +50,6 @@ void handle_curl(int redirsock, char* ipaddr) {
 	send(redirsock, ipaddr, strlen(ipaddr), 0);
 	bzero(ipaddr, sizeof(ipaddr));
 	close(redirsock);
-	return;
 
 }
 
@@ -74,15 +73,16 @@ void handle_html(char* html_to_serve_template, int html_len, int header_len,
 	//now send the html page with the user's IP in there
 	send(redirsock, html_to_serve, full_msg_len, 0);
 	bzero(ipaddr, sizeof(ipaddr));
+	puts(html_to_serve);
 	free(html_to_serve);
 	
 	close(redirsock);
-	return;
 
 }
 
-void* handle_connection(struct connection_data* conndata) {
+void* handle_connection(void* in_conndata) {
 
+	struct connection_data* conndata = (struct connection_data*) in_conndata;
 	//copy incoming message to buffer
 	read(conndata->redirsock, conndata->buf, 1000);
 	//create a new buffer to send the ip address in
@@ -111,8 +111,9 @@ void* handle_connection(struct connection_data* conndata) {
 		}
 
 	}
+	//connection data struct
+	//free(in_conndata);
 
-	close(conndata->redirsock);
 	return NULL;
 }
 
@@ -187,17 +188,18 @@ int main() {
 
 			//fire up some new threads
 			pthread_t t;
-			struct connection_data conndata;
-			conndata.redirsock = redirsock;
-			conndata.buf = buf;
-			conndata.html_to_serve_template = html_to_serve_template;
-			conndata.html_len = html_len;
-			conndata.header_len = header_len;
-			conndata.full_msg_len = full_msg_len;
-			conndata.resp_200 = resp_200;
-			conndata.rediraddr = rediraddr;
+			struct connection_data* conndata = malloc(sizeof(struct connection_data));
+			conndata->redirsock = redirsock;
+			conndata->buf = buf;
+			conndata->html_to_serve_template = html_to_serve_template;
+			conndata->html_len = html_len;
+			conndata->header_len = header_len;
+			conndata->full_msg_len = full_msg_len;
+			conndata->resp_200 = resp_200;
+			conndata->rediraddr = rediraddr;
 
-			pthread_create(&t, NULL, handle_connection, &conndata);
+			pthread_create(&t, NULL, handle_connection, (void*)conndata);
+			pthread_join(t,NULL);
 
 
 		}
