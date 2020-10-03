@@ -73,7 +73,6 @@ void handle_html(char* html_to_serve_template, int html_len, int header_len,
 	//now send the html page with the user's IP in there
 	send(redirsock, html_to_serve, full_msg_len, 0);
 	bzero(ipaddr, sizeof(ipaddr));
-	puts(html_to_serve);
 	free(html_to_serve);
 	
 	close(redirsock);
