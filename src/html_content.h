@@ -1,8 +1,6 @@
 #ifndef HTML_CONTENT
 #define HTML_CONTENT
 
-#include "html_content.c"
-
-char* get_html_content();
+char* get_html_template();
 
 #endif //HTML_CONTENT
