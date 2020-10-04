@@ -88,6 +88,7 @@ void* handle_connection(void* in_conndata) {
 	char* ipaddr;
 	ipaddr = inet_ntoa(conndata->rediraddr.sin_addr);
 
+	puts(conndata->buf);
 	//get the user agent, check if its curl
 	char* user_agent_start;
 	user_agent_start = strstr(conndata->buf,"User-Agent:");
@@ -199,7 +200,6 @@ int main() {
 
 			pthread_create(&t, NULL, handle_connection, (void*)conndata);
 			pthread_join(t,NULL);
-
 
 		}
 	}
