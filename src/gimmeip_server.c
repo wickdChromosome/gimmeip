@@ -82,15 +82,14 @@ void handle_html(char* html_to_serve_template, int html_len, int header_len,
 void* handle_connection(void* in_conndata) {
 
 
-	char* buf = (char*)malloc(1000);
+	char* buf = (char*)malloc(2000);
 	struct connection_data* conndata = (struct connection_data*) in_conndata;
 	//copy incoming message to buffer
-	read(conndata->redirsock, buf, 1000);
+	read(conndata->redirsock, buf, 2000);
 	//create a new buffer to send the ip address in
 	char* ipaddr;
 	ipaddr = inet_ntoa(conndata->rediraddr.sin_addr);
 
-	puts(buf);
 	//get the user agent, check if its curl
 	char* user_agent_start;
 	user_agent_start = strstr(buf,"User-Agent:");
@@ -120,6 +119,10 @@ void* handle_connection(void* in_conndata) {
 
 
 int main() {
+
+	struct timeval timeout;      
+	timeout.tv_sec = 3;
+	timeout.tv_usec = 0;
 
 	//html response if user agent not curl
 	char* html_to_serve_template = get_html_template(); 
@@ -177,6 +180,11 @@ int main() {
 
 		//accept new connection
 		redirsock = accept(server_socket, (struct sockaddr*)&rediraddr, &newsocket_size);
+
+		if (setsockopt (redirsock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
+                sizeof(timeout)) < 0){
+			printf("setsockopt failed for %i", redirsock);
+		}
 		if(redirsock < 0){
 			printf("Unable to accept connection\n");
 			
