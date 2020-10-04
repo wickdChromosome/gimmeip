@@ -183,7 +183,7 @@ int main() {
 		redirsock = accept(server_socket, (struct sockaddr*)&rediraddr, &newsocket_size);
 
 		//set socket receive timeout
-		if (setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+		if (setsockopt (redirsock, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
                 	sizeof(timeout)) < 0)
 	 	       puts("setsockopt failed\n");
 
