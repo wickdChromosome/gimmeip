@@ -66,7 +66,7 @@ char* get_html_template() { return "\
 <script type='text/javascript'>\
 	\
 	var typed = new Typed('#welcome_text',{\
-		strings: ['<h4>Here is you public IP address: ^ip^           </h4>'],\
+		strings: ['<h4>Here is your public IP address: ^ip^           </h4>'],\
 		stringsElement: '#typed-strings',\
 		showCursor: false,\
 		typeSpeed: 10,\

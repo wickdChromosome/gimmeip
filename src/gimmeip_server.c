@@ -18,8 +18,8 @@
 
 #include "html_content.h"
 
-#define PORT 8888  
-#define HOST_ADDR "127.0.0.1" 
+#define PORT 80 
+#define HOST_ADDR "67.205.162.66" 
 
 void _abort(char* errormsg) {
 
