@@ -11,10 +11,14 @@
 
 #include <unistd.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <sys/sendfile.h>
 
 #include "html_content.h"
 
@@ -55,6 +59,47 @@ void handle_curl(int redirsock, char* ipaddr) {
 }
 
 
+void handle_favicon(int redirsock) {
+
+	int fdimg = open("favicon.ico", O_RDONLY);
+	sendfile(redirsock, fdimg, NULL, 4000);
+	close(fdimg);
+	close(redirsock);
+
+}
+
+
+void handle_404(int redirsock) {
+
+
+
+
+
+	//convert ip address to string and send it
+	char resp_404[] = "HTTP/1.1 200 OK\r\n^\
+			  Content-Length: 1000\r\n^\
+			  Connection: close\r\n^\
+			  Content-Type: text/html\r\n\r\n^\
+			  <!DOCTYPE html>\r\n^ \
+			  <html><head>\r\n^\
+			  <title>404</title>\r\n^\
+			  </head><body><center>\r\n^\
+			  <h1>404</h1>\r\n^\
+			  </center></body></html>\r\n";
+	
+	//tokenize data and send it line by line
+	char* line_ptr = strtok(resp_404,"^");
+	while(line_ptr) {
+
+		puts(line_ptr);
+		send(redirsock, line_ptr, strlen(line_ptr), 0);
+		line_ptr = strtok(NULL, "^");
+
+	}
+	close(redirsock);
+
+}
+
 void handle_html(char* html_to_serve_template, int html_len, int header_len, 
 		char* resp_200, char* ipaddr, int redirsock, int full_msg_len) {
 
@@ -82,10 +127,11 @@ void handle_html(char* html_to_serve_template, int html_len, int header_len,
 
 void* handle_connection(void* in_conndata) {
 
-	char* buf = (char*)malloc(2000);
+	char* buf = (char*)malloc(1000);
 	struct connection_data* conndata = (struct connection_data*) in_conndata;
 	//copy incoming message to buffer
-	read(conndata->redirsock, buf, 2000);
+	read(conndata->redirsock, buf, 1000);
+	puts(buf);
 	//create a new buffer to send the ip address in
 	char* ipaddr;
 	ipaddr = inet_ntoa(conndata->rediraddr.sin_addr);
@@ -93,6 +139,8 @@ void* handle_connection(void* in_conndata) {
 	//get the user agent, check if its curl
 	char* user_agent_start;
 	user_agent_start = strstr(buf,"User-Agent:");
+	
+	//send no reply if the header doesn't contain a user agent line
 	if(user_agent_start != NULL){
 
 		if( strncmp(user_agent_start, "User-Agent: curl", 16) == 0 ) {
@@ -101,14 +149,30 @@ void* handle_connection(void* in_conndata) {
 		
 		} else {
 	
-			handle_html(conndata->html_to_serve_template,
-					conndata->html_len,
-					conndata->header_len,
-					conndata->resp_200,
-					ipaddr,
-					conndata->redirsock,
-					conndata->full_msg_len);
+			//is it a request for favicon?
+			if (!strncmp(buf, "GET /favicon.ico", 16)) {
+		
+				puts("serving icon");	
+				handle_favicon(conndata->redirsock);
 
+			} else if (!strncmp(buf, "GET / ", 6)) {
+
+				puts("serving page");
+				//is it a request for the main page then?
+				handle_html(conndata->html_to_serve_template,
+						conndata->html_len,
+						conndata->header_len,
+						conndata->resp_200,
+						ipaddr,
+						conndata->redirsock,
+						conndata->full_msg_len);
+			} else {
+				
+				puts("serving 404");
+				//if none of these, throw a 404
+				handle_404(conndata->redirsock);
+
+			}
 		}
 
 	}

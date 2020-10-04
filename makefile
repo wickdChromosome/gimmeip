@@ -1,4 +1,4 @@
-CCFLAGS=-pthread -O3
+CCFLAGS=-pthread 
 
 all: bin/gimmeip_server
 
