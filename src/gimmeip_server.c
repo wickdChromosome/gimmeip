@@ -61,8 +61,9 @@ void handle_curl(int redirsock, char* ipaddr) {
 
 void handle_favicon(int redirsock) {
 
+	//lets send an 200 response first for compatibility
 	int fdimg = open("favicon.ico", O_RDONLY);
-	sendfile(redirsock, fdimg, NULL, 4000);
+	sendfile(redirsock, fdimg, NULL, 7000);
 	close(fdimg);
 	close(redirsock);
 
@@ -71,16 +72,13 @@ void handle_favicon(int redirsock) {
 
 void handle_404(int redirsock) {
 
-
-
-
-
 	//convert ip address to string and send it
-	char resp_404[] = "HTTP/1.1 200 OK\r\n^\
+	char resp_404[] = "HTTP/1.1 404\r\n^\
 			  Content-Length: 1000\r\n^\
 			  Connection: close\r\n^\
+			  <link rel='icon' type='image/png' href='/favicon.ico' />\r\n^\
 			  Content-Type: text/html\r\n\r\n^\
-			  <!DOCTYPE html>\r\n^ \
+			  <!DOCTYPE html>\r\n^\
 			  <html><head>\r\n^\
 			  <title>404</title>\r\n^\
 			  </head><body><center>\r\n^\
@@ -91,7 +89,6 @@ void handle_404(int redirsock) {
 	char* line_ptr = strtok(resp_404,"^");
 	while(line_ptr) {
 
-		puts(line_ptr);
 		send(redirsock, line_ptr, strlen(line_ptr), 0);
 		line_ptr = strtok(NULL, "^");
 
@@ -131,7 +128,6 @@ void* handle_connection(void* in_conndata) {
 	struct connection_data* conndata = (struct connection_data*) in_conndata;
 	//copy incoming message to buffer
 	read(conndata->redirsock, buf, 1000);
-	puts(buf);
 	//create a new buffer to send the ip address in
 	char* ipaddr;
 	ipaddr = inet_ntoa(conndata->rediraddr.sin_addr);
@@ -152,12 +148,10 @@ void* handle_connection(void* in_conndata) {
 			//is it a request for favicon?
 			if (!strncmp(buf, "GET /favicon.ico", 16)) {
 		
-				puts("serving icon");	
 				handle_favicon(conndata->redirsock);
 
 			} else if (!strncmp(buf, "GET / ", 6)) {
 
-				puts("serving page");
 				//is it a request for the main page then?
 				handle_html(conndata->html_to_serve_template,
 						conndata->html_len,
@@ -168,7 +162,6 @@ void* handle_connection(void* in_conndata) {
 						conndata->full_msg_len);
 			} else {
 				
-				puts("serving 404");
 				//if none of these, throw a 404
 				handle_404(conndata->redirsock);
 
