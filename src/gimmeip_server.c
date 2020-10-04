@@ -20,6 +20,7 @@
 
 #define PORT 8888 
 #define HOST_ADDR "127.0.0.1" 
+#define TIMEOUT_SEC 3
 
 void _abort(char* errormsg) {
 
@@ -81,7 +82,6 @@ void handle_html(char* html_to_serve_template, int html_len, int header_len,
 
 void* handle_connection(void* in_conndata) {
 
-
 	char* buf = (char*)malloc(2000);
 	struct connection_data* conndata = (struct connection_data*) in_conndata;
 	//copy incoming message to buffer
@@ -120,8 +120,9 @@ void* handle_connection(void* in_conndata) {
 
 int main() {
 
+	//the timeout for receive operations
 	struct timeval timeout;      
-	timeout.tv_sec = 3;
+	timeout.tv_sec = TIMEOUT_SEC;
 	timeout.tv_usec = 0;
 
 	//html response if user agent not curl
@@ -181,10 +182,12 @@ int main() {
 		//accept new connection
 		redirsock = accept(server_socket, (struct sockaddr*)&rediraddr, &newsocket_size);
 
-		if (setsockopt (redirsock, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout,
-                sizeof(timeout)) < 0){
-			printf("setsockopt failed for %i", redirsock);
-		}
+		//set socket receive timeout
+		if (setsockopt (sockfd, SOL_SOCKET, SO_RCVTIMEO, (char *)&timeout,
+                	sizeof(timeout)) < 0)
+	 	       puts("setsockopt failed\n");
+
+
 		if(redirsock < 0){
 			printf("Unable to accept connection\n");
 			
