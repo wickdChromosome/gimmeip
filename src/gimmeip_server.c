@@ -18,8 +18,8 @@
 
 #include "html_content.h"
 
-#define PORT 80 
-#define HOST_ADDR "67.205.162.66" 
+#define PORT 8888 
+#define HOST_ADDR "127.0.0.1" 
 
 void _abort(char* errormsg) {
 
@@ -81,17 +81,19 @@ void handle_html(char* html_to_serve_template, int html_len, int header_len,
 
 void* handle_connection(void* in_conndata) {
 
+
+	char* buf = (char*)malloc(1000);
 	struct connection_data* conndata = (struct connection_data*) in_conndata;
 	//copy incoming message to buffer
-	read(conndata->redirsock, conndata->buf, 1000);
+	read(conndata->redirsock, buf, 1000);
 	//create a new buffer to send the ip address in
 	char* ipaddr;
 	ipaddr = inet_ntoa(conndata->rediraddr.sin_addr);
 
-	puts(conndata->buf);
+	puts(buf);
 	//get the user agent, check if its curl
 	char* user_agent_start;
-	user_agent_start = strstr(conndata->buf,"User-Agent:");
+	user_agent_start = strstr(buf,"User-Agent:");
 	if(user_agent_start != NULL){
 
 		if( strncmp(user_agent_start, "User-Agent: curl", 16) == 0 ) {
@@ -111,17 +113,14 @@ void* handle_connection(void* in_conndata) {
 		}
 
 	}
-	//connection data struct
-	//free(in_conndata);
 
+	free(buf);
 	return NULL;
 }
 
 
 int main() {
 
-	//buffer to store incoming request to
-	char buf[1000];
 	//html response if user agent not curl
 	char* html_to_serve_template = get_html_template(); 
 	int html_len = strlen(html_to_serve_template);
@@ -190,7 +189,6 @@ int main() {
 			pthread_t t;
 			struct connection_data* conndata = malloc(sizeof(struct connection_data));
 			conndata->redirsock = redirsock;
-			conndata->buf = buf;
 			conndata->html_to_serve_template = html_to_serve_template;
 			conndata->html_len = html_len;
 			conndata->header_len = header_len;
@@ -200,6 +198,7 @@ int main() {
 
 			pthread_create(&t, NULL, handle_connection, (void*)conndata);
 			pthread_join(t,NULL);
+
 
 		}
 	}
