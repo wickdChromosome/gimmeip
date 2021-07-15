@@ -1,9 +1,10 @@
 # gimmeip.org
 
 ## Description 
+This web server is not currently hosted under gimmeip.org, but you can still pull the repo, compile and run the service if needed.
 Intended to be an easy way to get your public IP address from a terminal, for use in scripts(check to make sure VPN works, etc) for example. To get your public IP, you can do:
 ```
-my_ip=$(curl gimmeip.org) && echo $my_ip
+my_ip=$(curl $WEBSERVER_IP) && echo $my_ip
 127.0.0.1
 ```
 
